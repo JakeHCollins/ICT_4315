@@ -1,6 +1,6 @@
 /*
  * Course ICT4315
- * Author: Instructor
+ * Author: Jake Collins, Nathan Braun
  */
 package edu.du.ict4315.currency.test;
 
@@ -8,7 +8,8 @@ import edu.du.ict4315.currency.Money;
 import java.util.Currency;
 import java.util.Set;
 import static org.junit.jupiter.api.Assertions.*;
-import org.junit.jupiter.api.Test;
+
+import org.junit.Test;
 
 /**
  * The Money class comprises an integral amount (currency's "penny" equivalent) and an official

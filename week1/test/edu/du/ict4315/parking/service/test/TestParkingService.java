@@ -1,7 +1,7 @@
 /*
  * Course: ICT4315
  * File: TestParkingService.java
- * Author: Instructor
+ * Author: Jake Collins, Nathan Braun
  */
 package edu.du.ict4315.parking.service.test;
 
@@ -13,10 +13,6 @@ import java.util.List;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
-/**
- *
- * @author michael
- */
 public class TestParkingService {
 
   private final RealParkingOffice office = new RealParkingOffice();
@@ -29,7 +25,6 @@ public class TestParkingService {
     String[][] params = {
       {"lastName=Smith"},
       {"Jones"},
-      {"name=Nguyen"}
     };
     for (int i = 0; i < params.length; i++) {
       String result = service.performCommand("CUSTOMER", params[i]);
@@ -41,7 +36,7 @@ public class TestParkingService {
   @Test
   void testCustomerFailure() {
     String[][] params = {
-      {}
+      {}, {"name=Nguyen"}
     };
     for (int i = 0; i < params.length; i++) {
       String result = service.performCommand("CUSTOMER", params[i]);
@@ -51,7 +46,6 @@ public class TestParkingService {
   }
 
   private void collectCustomerIds(int min, int max) {
-    // Just check all CUST-num strings between min and max
     for (int num = min; num <= max; num++) {
       Customer c;
       if ((c = office.getCustomer(String.format("CUST-%d", num))) != null) {
@@ -81,13 +75,13 @@ public class TestParkingService {
       {"license_plate=ABC-123", "customer=" + getCustomerId()},
       {"license_plate=DEF-234", "customer=" + getCustomerId()},};
 
-    for (int i = 0; i < params.length; i++) {
-      String result = service.performCommand("CAR", params[i]);
-      System.out.println("Created car " + result);
-      // The result is multi-line, so the (?s) allows matching across lines.
-      // The .* and the beginning and end is to matach anything other than the Pnnnn permit numbers
-      assertTrue(result.matches("(?s).*P\\d+.*")); // or "P[0-9]+"
-    }
+      for (String[] param : params) {
+          String result = service.performCommand("CAR", param);
+          System.out.println("Created car " + result);
+          // The result is multi-line, so the (?s) allows matching across lines.
+          // The .* and the beginning and end is to matach anything other than the Pnnnn permit numbers
+          assertTrue(result.matches("(?s).*P\\d+.*")); // or "P[0-9]+"
+      }
   }
 
   @Test
@@ -97,20 +91,18 @@ public class TestParkingService {
       { "license_plate=GHI-987" },
       { "customer="+getCustomerId() }
     };
-    // Create one customer to avoid any ordering problems in the tests
     String[] customerParam = {"Sample"};
     service.performCommand("CUSTOMER", customerParam);
     collectCustomerIds(10, 200);
     if (customerIds.isEmpty()) {
       System.out.println("No customers registered yet. Cannot test Car.");
-      return; // Can't test zero ids
+      return;
     }
 
-    for (int i = 0; i < params.length; i++) {
-      String result = service.performCommand("CAR", params[i]);
-      System.out.println("Result: " + result);
-      assertFalse(result.matches("(?s).*P\\d+.*"));
-    }
+      for (String[] param : params) {
+          String result = service.performCommand("CAR", param);
+          System.out.println("Result: " + result);
+          assertFalse(result.matches("(?s).*P\\d+.*"));
+      }
   }
-
 }

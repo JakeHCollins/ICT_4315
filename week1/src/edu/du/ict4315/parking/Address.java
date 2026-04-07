@@ -53,31 +53,26 @@ public class Address {
 
     public Builder withStreetAddress1(String street1) {
       this.streetAddress1 = street1;
-
       return this;
     }
 
     public Builder withStreetAddress2(String street) {
       this.streetAddress2 = street;
-
       return this;
     }
 
     public Builder withCity(String city) {
       this.city = city;
-
       return this;
     }
 
     public Builder withState(String state) {
       this.state = state;
-
       return this;
     }
 
     public Builder withZip(String zip) {
       this.zip = zip;
-
       return this;
     }
 
@@ -88,9 +83,7 @@ public class Address {
       address.city = this.city;
       address.state = this.state;
       address.zip = this.zip;
-
       return address;
-
     }
 
   }
