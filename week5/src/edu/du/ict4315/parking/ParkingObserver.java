@@ -15,7 +15,7 @@ public class ParkingObserver implements ParkingAction {
 
     @Override
     public void update(ParkingEvent event) {
-        if (event.getEventType() == ParkingEvent.EventType.ENTER) {
+        if (event.eventType() == ParkingEvent.EventType.ENTER) {
             transactionManager.park(event);
         }
     }

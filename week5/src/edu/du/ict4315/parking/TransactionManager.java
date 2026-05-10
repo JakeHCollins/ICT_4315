@@ -18,12 +18,12 @@ public class TransactionManager {
   }
 
   public ParkingTransaction park(ParkingEvent event) {
-    ParkingLot lot = event.getLot();
-    ParkingPermit permit = event.getPermit();
+    ParkingLot lot = event.lot();
+    ParkingPermit permit = event.permit();
     ParkingTransaction transaction = null;
     if (lot != null && permit != null) {
-      Money money = lot.getParkingCharges(permit, event.getEventTime());
-      transaction = new ParkingTransaction(event.getEventTime(), permit, lot, money);
+      Money money = lot.getParkingCharges(permit, event.eventTime());
+      transaction = new ParkingTransaction(event.eventTime(), permit, lot, money);
       transactions.add(transaction);
     }
     return transaction;
