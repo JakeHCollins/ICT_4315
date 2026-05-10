@@ -10,6 +10,7 @@ import edu.du.ict4315.currency.Money;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 public class RealParkingOffice {
@@ -22,6 +23,10 @@ public class RealParkingOffice {
   //       for the customer list and parking lot list
   private final PermitManager permitManager = new PermitManager();  
   private final TransactionManager transactionManager = new TransactionManager(this);
+
+  public List<ParkingLot> getParkingLots() {
+    return Collections.unmodifiableList(listOfParkingLots);
+  }
 
   public String register(Customer c) {
     listOfCustomers.add(c);
