@@ -1,9 +1,9 @@
 package edu.du.ict4315.parking;
 
 import edu.du.ict4315.currency.Money;
-import edu.du.ict4315.parking.charges.factory.ParkingChargeStrategyFactory;
-import edu.du.ict4315.parking.charges.factory.WeekdayVehicleTypeStrategyFactory;
-import edu.du.ict4315.parking.charges.strategy.ParkingChargeStrategy;
+import edu.du.ict4315.parking.charges.decorator.ParkingChargeCalculator;
+import edu.du.ict4315.parking.charges.factory.ParkingChargeCalculatorFactory;
+import edu.du.ict4315.parking.charges.factory.StandardCalculatorFactory;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -13,7 +13,7 @@ public class ParkingLot {
     private String name;
     private Address address;
     private Money baseRate = Money.of(5.00);
-    private ParkingChargeStrategyFactory strategyFactory = new WeekdayVehicleTypeStrategyFactory();
+    private ParkingChargeCalculatorFactory calculatorFactory = new StandardCalculatorFactory();
     private final List<ParkingAction> observers = new ArrayList<>();
 
     public ParkingLot(String id, String name, Address address) {
@@ -29,12 +29,12 @@ public class ParkingLot {
         this.baseRate = baseRate;
     }
 
-    public ParkingLot(String id, String name, Address address, Money baseRate, ParkingChargeStrategyFactory strategyFactory) {
+    public ParkingLot(String id, String name, Address address, Money baseRate, ParkingChargeCalculatorFactory calculatorFactory) {
         this.id = id;
         this.name = name;
         this.address = address;
         this.baseRate = baseRate;
-        this.strategyFactory = strategyFactory;
+        this.calculatorFactory = calculatorFactory;
     }
 
     public void addObserver(ParkingAction observer) {
@@ -62,20 +62,20 @@ public class ParkingLot {
     }
 
     public Money getParkingCharges(ParkingPermit p, LocalDateTime in) {
-        ParkingChargeStrategy strategy = strategyFactory.getStrategy();
-        return strategy.calculateCharge(baseRate, p, in);
+        ParkingChargeCalculator calculator = calculatorFactory.getCalculator();
+        return calculator.getParkingCharge(in, this, p);
     }
 
     public Money getBaseRate() {
         return baseRate;
     }
 
-    public ParkingChargeStrategyFactory getStrategyFactory() {
-        return strategyFactory;
+    public ParkingChargeCalculatorFactory getCalculatorFactory() {
+        return calculatorFactory;
     }
 
-    public void setStrategyFactory(ParkingChargeStrategyFactory strategyFactory) {
-        this.strategyFactory = strategyFactory;
+    public void setCalculatorFactory(ParkingChargeCalculatorFactory calculatorFactory) {
+        this.calculatorFactory = calculatorFactory;
     }
 
     public String getId() {
