@@ -1,0 +1,5 @@
+# id, Factory name
+W,edu.du.ict4315.parking.charges.factory.FactoryFavorLargeCarsLateEntry
+108,edu.du.ict4315.parking.charges.factory.FactoryFavorSmallCarsEarlyIn
+321,edu.du.ict4315.parking.charges.factory.FactoryOriginalAlgorithm
+301,edu.du.ict4315.parking.charges.factory.FactoryFlatRate
