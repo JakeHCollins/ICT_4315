@@ -1,0 +1,5 @@
+# id, name, add:st1, add:st2, add:city, add:state, add:zip, charges (e.g., daily rate), capacity, lot class
+W,Lot W,E Jewell Ave,,Denver,CO,80210,5,20,edu.du.ict4315.parking.ParkingLotChargeOnEntry
+108,Lot 108,E Buchtel Ave,,Denver,CO,80210,2,30,edu.du.ict4315.parking.ParkingLotChargeOnExit
+321,Lot 321,S Gaylord St,,Denver,CO,80210,8,10,edu.du.ict4315.parking.ParkingLotChargeOnExit
+301,Lot 301,E Evans Ave,,Denver,CO,80210,8,8,edu.du.ict4315.parking.ParkingLotChargeOnEntry
