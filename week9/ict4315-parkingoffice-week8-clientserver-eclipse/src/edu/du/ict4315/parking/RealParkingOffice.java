@@ -1,57 +1,28 @@
-////////////////////
-// This object is at the heart of the Parking System.
-// It is called "RealParkingOffice" in anticipation of creating a ParkingOffice interface later
-// File: RealParkingOffice.java
-// Author: M. I. Schwartz
-////////////////////
 package edu.du.ict4315.parking;
 
+import com.google.inject.Inject;
 import edu.du.ict4315.currency.Money;
-import edu.du.ict4315.parking.support.FileLoaderParkingLot;
-import edu.du.ict4315.parking.support.FileLoaderUser;
-import edu.du.ict4315.parking.support.IdMaker;
-import edu.du.ict4315.parking.support.User;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
-public class RealParkingOffice implements ParkingOfficeAdminProxy {
+public class RealParkingOffice {
+    private String parkingOfficeName = "Not set";
+    private final List<Customer> listOfCustomers = new ArrayList<>();
+    private final List<ParkingLot> listOfParkingLots = new ArrayList<>();
+    private Address parkingOfficeAddress = new Address.Builder().build();
 
-    private String parkingOfficeName;
-    private final List<Customer> listOfCustomers;
-    private final List<ParkingLot> listOfParkingLots;
-    private Address parkingOfficeAddress;
-    private final PermitManager permitManager;
+    private final PermitManager permitManager = new PermitManager();
     private final TransactionManager transactionManager;
 
-    // TODO: All of existing Customers, Cars, Permits, Lots should be persisted
-    // TODO: These interfaces should be dependency-injected, not constructed
-    // If an add lot method is ever added, the transaction manager must observer it.
-    public RealParkingOffice() {
-        parkingOfficeName = "Not set";
-        listOfCustomers = new ArrayList<>();
-        listOfParkingLots = new ArrayList<>();
-        parkingOfficeAddress = new Address.Builder().build();
-        permitManager = new PermitManager();
-        transactionManager = new TransactionManager(this);
-
-        ParkingLot[] lots = FileLoaderParkingLot.loadCsvFileParkingLot("data/parking_lots_du.csv");
-        listOfParkingLots.addAll(Arrays.asList(lots));
-
-        for (ParkingLot lot : listOfParkingLots) {
-            lot.addParkingObserver(transactionManager);
-        }
-
-        FileLoaderParkingLot.loadCsvFileParkingLotFactory("data/parking_lot_factories.csv", this);
-
-        FileLoaderUser.loadCsvUserFile("data/users.csv", this);
+    @Inject
+    public RealParkingOffice(TransactionManager transactionManager) {
+        this.transactionManager = transactionManager;
+        setupParkingLots();
     }
 
     public String register(Customer c) {
-        if (c.getId().isBlank()) {
-            c.setId(IdMaker.makeId("CUST"));
-        }
         listOfCustomers.add(c);
         return c.getId();
     }
@@ -60,27 +31,8 @@ public class RealParkingOffice implements ParkingOfficeAdminProxy {
         return permitManager.register(c).getId();
     }
 
-    // For overflow and for testing purposes we allow
-    // parking lots to be added and removed
-    public String register(ParkingLot lot) {
-        listOfParkingLots.add(lot);
-        lot.addParkingObserver(transactionManager);
-        return lot.getId();
-    }
-
-    public void unregister(ParkingLot lot) {
-        listOfParkingLots.remove(lot);
-        lot.removeParkingObserver(transactionManager);
-    }
-
     public ParkingTransaction park(LocalDateTime d, ParkingPermit p, ParkingLot l) {
-        // l.enterLot(d, p.getId());
         return transactionManager.park(d, p, l);
-    }
-
-    public ParkingTransaction leave(LocalDateTime in, LocalDateTime out, ParkingPermit p, ParkingLot l) {
-        // l.exitLot(in, out, p.getId());
-        return transactionManager.leave(in, out, p, l);
     }
 
     public Money getParkingCharges(ParkingPermit p) {
@@ -107,30 +59,33 @@ public class RealParkingOffice implements ParkingOfficeAdminProxy {
         this.parkingOfficeAddress = parkingOfficeAddress;
     }
 
-    // The provided user and password are the administrator credentials
-    public void saveUserFile(String user, String password) {
-        FileLoaderUser.saveCsvUserFile("data/users.csv", this, user, password);
+    public final void setupParkingLots() {
+        String[][] parkingLotData = {
+            { "W",   "Lot W",   "E Jewell Ave",  "", "Denver", "CO", "80210", "$5.00" },
+            { "108", "Lot 108", "E Buchtel Ave", "", "Denver", "CO", "80210", "$2.00" },
+            { "321", "Lot 321", "S Gaylord St",  "", "Denver", "CO", "80210", "$8.00" },
+            { "301", "Lot 301", "E Evans Ave",   "", "Denver", "CO", "80210", "$8.00" },
+        };
+
+        for (String[] row : parkingLotData) {
+            Address address = new Address.Builder()
+                    .withStreetAddress1(row[2])
+                    .withStreetAddress2(row[3])
+                    .withCity(row[4])
+                    .withState(row[5])
+                    .withZip(row[6])
+                    .build();
+            ParkingLot lot = new ParkingLot(row[0], row[1], address, Money.of(row[7]));
+            addParkingLot(lot);
+        }
     }
 
-    @Override
-    public String toString() {
-        StringBuffer sb = new StringBuffer();
-        sb.append("Parking Office: ");
-        sb.append(parkingOfficeName);
-        sb.append("\n");
-        sb.append(parkingOfficeAddress);
-        sb.append("\n");
-        sb.append("Customer List\n");
-        sb.append(listOfCustomers);
-        sb.append("\n");
-        sb.append("User list\n");
-        sb.append(String.join("\n", User.getUsers()));
-        sb.append("\n");
-        sb.append("Parking Lots\n");
-        sb.append(listOfParkingLots);
-        sb.append("\n");
+    public void addParkingLot(ParkingLot lot) {
+        listOfParkingLots.add(lot);
+    }
 
-        return sb.toString();
+    public List<ParkingLot> getParkingLots() {
+        return Collections.unmodifiableList(listOfParkingLots);
     }
 
     public Customer getCustomer(String id) {
@@ -144,20 +99,6 @@ public class RealParkingOffice implements ParkingOfficeAdminProxy {
         return result;
     }
 
-    public String[] getCustomerIds() {
-        return listOfCustomers.stream().map(customer -> customer.getId()).toArray(String[]::new);
-    }
-
-    public String[] getLotIds() {
-        return listOfParkingLots.stream().map(lot -> lot.getId()).toArray(String[]::new);
-    }
-
-    // Delegation from User
-    public User authorizeUser(String id, String passwd) {
-        return User.authorizeUser(id, passwd);
-    }
-
-    // Use delegation
     public ParkingPermit getParkingPermit(String id) {
         return permitManager.findPermit(id);
     }
@@ -170,7 +111,23 @@ public class RealParkingOffice implements ParkingOfficeAdminProxy {
                 break;
             }
         }
-
         return result;
     }
-}
+
+    @Override
+    public String toString() {
+        StringBuilder sb = new StringBuilder();
+        sb.append("Parking Office: ");
+        sb.append(parkingOfficeName);
+        sb.append("\n");
+        sb.append(parkingOfficeAddress);
+        sb.append("\n");
+        sb.append("Customer List\n");
+        sb.append(listOfCustomers);
+        sb.append("\n");
+        sb.append("Parking Lots\n");
+        sb.append(listOfParkingLots);
+        sb.append("\n");
+        return sb.toString();
+    }
+}s

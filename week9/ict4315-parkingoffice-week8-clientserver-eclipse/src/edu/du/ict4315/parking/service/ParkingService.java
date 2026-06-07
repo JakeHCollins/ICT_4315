@@ -1,94 +1,106 @@
-///////////////////////////////
-// File: ParkingService.java
-// Author: Instructor
-// This file is the seed for how the ParkingOffice server handles remote commands.
-//
-// Parking Service Commands:
-//     Display name       command name      parameters
-//     Register customer  CUSTOMER          first name
-//     Register car       CAR               license plate, owner id
-//     Park               PARK              permit id, lot id, datetime (now)
-//
-// TODO: Consider if performCommand should take a Properties object
-///////////////////////////////
 package edu.du.ict4315.parking.service;
 
+import com.google.inject.Inject;
+import edu.du.ict4315.parking.Command;
+import edu.du.ict4315.parking.ParkingLot;
+import edu.du.ict4315.parking.ParkingPermit;
+import edu.du.ict4315.parking.ParkingTransaction;
 import edu.du.ict4315.parking.RealParkingOffice;
-import edu.du.ict4315.parking.command.Command;
-import edu.du.ict4315.parking.command.DefaultCommand;
-import edu.du.ict4315.parking.command.ListCustomerCommand;
-import edu.du.ict4315.parking.command.ListParkingLotCommand;
-import edu.du.ict4315.parking.command.ParkCommand;
-import edu.du.ict4315.parking.command.RegisterCarCommand;
-import edu.du.ict4315.parking.command.RegisterCustomerCommand;
-import java.io.InputStream;
-import java.util.ArrayList;
+
+import java.time.LocalDateTime;
+import java.time.format.DateTimeParseException;
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
-import java.util.Scanner;
-import java.util.TreeMap;
+import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class ParkingService {
 
+    private final RealParkingOffice office;
+    private final Map<String, Command> commands = new HashMap<>();
+
     private static final Logger logger = Logger.getLogger(ParkingService.class.getName());
 
-    public ParkingService(RealParkingOffice parkingOffice) {
-        this.parkingOffice = parkingOffice;
-        // Register the known commands
-        register(new RegisterCarCommand(parkingOffice));
-        register(new RegisterCustomerCommand(parkingOffice));
-        register(new ParkCommand(parkingOffice));
-        register(new ListCustomerCommand(parkingOffice));
-        register(new ListParkingLotCommand(parkingOffice));
+    @Inject
+    public ParkingService(RealParkingOffice office, Set<Command> injectedCommands) {
+        this.office = office;
+        injectedCommands.forEach(this::register);
     }
 
-    protected final RealParkingOffice parkingOffice;
-
-    // Map of the command names to their implementations
-    private Map<String, Command> commands = new TreeMap<>();
-
-    private void register(Command command) {
+    public void register(Command command) {
         commands.put(command.getCommandName(), command);
+        logger.log(Level.INFO, "Registered command: {0}", command.getCommandName());
     }
 
-    // Notice how this version of performCommand puts all the logic in the
-    // implementation classes. 
-    // Shared logic can be put in a support class.
-    // To be a bit more robust, all Property keys are converted to lower case.
-    // Values are left alone
-    public String performCommand(String commandName, String[] args) {
-        // Look up the command
-        Command command = commands.getOrDefault(commandName, new DefaultCommand(commandName));
-        logger.info("Received command: " + command.getDisplayName());
-        logger.info("  Args: " + String.join("||", args));
-        // Convert the args into a Properties (split on equals, discard if no =)
-        Properties properties = new Properties();
-        for (String string : args) {
-            if (string.isBlank()) {
-                break;
-            }
-            String[] keyValue = string.split("=");
-            if (keyValue.length == 2) {
-                properties.put(keyValue[0].toLowerCase(), keyValue[1]);
-            } else {
-                logger.info("Ignoring parameter " + string + ". Malformed.");
+    public String performCommand(String command, String[] args) {
+        logger.log(Level.INFO, "Performing {0} command with args: {1}",
+                new Object[]{command, Arrays.toString(args)});
+
+        Properties params = parseArgs(args);
+
+        Command cmd = commands.get(command);
+        if (cmd != null) {
+            try {
+                return command + ": " + cmd.execute(params);
+            } catch (IllegalArgumentException e) {
+                logger.log(Level.WARNING, "Command {0} failed: {1}",
+                        new Object[]{command, e.getMessage()});
+                return command + ": Cannot execute - " + e.getMessage();
             }
         }
-        // Execute the command with the properties
-        return command.execute(properties);
+
+        return switch (command) {
+            case "PARK" -> handlePark(params);
+            case "CHARGES" -> command + ": Charges not implemented yet";
+            default -> command + ": Command unknown";
+        };
     }
 
-    public String[] listCommands() {
-        return commands.keySet().toArray(String[]::new);
+    private static Properties parseArgs(String[] args) {
+        Properties props = new Properties();
+        int positional = 0;
+        if (args == null) return props;
+        for (String arg : args) {
+            String[] parts = arg.split("=", 2);
+            if (parts.length == 2) {
+                props.setProperty(parts[0].trim(), parts[1].trim());
+            } else {
+                props.setProperty("arg" + positional, arg.trim());
+                positional++;
+            }
+        }
+        return props;
     }
 
-    public String handleInput(String command, Map<String, String> data) {
-        logger.log(Level.INFO, "data: {0}", data.toString());
-        String[] args = data.entrySet().stream()
-                .map(e -> e.getKey() + "=" + e.getValue())
-                .toArray(String[]::new);
-        return performCommand(command, args);
+    private String handlePark(Properties params) {
+        String lotId    = params.getProperty("lotId",    params.getProperty("arg0"));
+        String permitId = params.getProperty("permitId", params.getProperty("arg1"));
+        String dateStr  = params.getProperty("dateTime", params.getProperty("arg2"));
+
+        if (lotId == null || permitId == null || dateStr == null) {
+            return "PARK: Cannot park - wrong number of parameters";
+        }
+
+        LocalDateTime dateTime = parseDateTime(dateStr);
+        ParkingLot lot         = office.getParkingLot(lotId);
+        ParkingPermit permit   = office.getParkingPermit(permitId);
+
+        ParkingTransaction transaction = office.park(dateTime, permit, lot);
+        if (transaction != null) {
+            return "PARK: " + transaction.getChargedAmount().toString();
+        }
+        return "PARK: Parking transaction failed - parameters invalid";
+    }
+
+    private static LocalDateTime parseDateTime(String dateTime) {
+        try {
+            return LocalDateTime.parse(dateTime);
+        } catch (DateTimeParseException ex) {
+            logger.log(Level.INFO, "Cannot parse datetime {0}", dateTime);
+            return LocalDateTime.now();
+        }
     }
 }

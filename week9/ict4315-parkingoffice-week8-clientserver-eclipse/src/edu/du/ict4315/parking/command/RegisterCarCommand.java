@@ -1,68 +1,78 @@
-/*
- * Course ICT4315
- * Author: Instructor
- */
-package edu.du.ict4315.parking.command;
+package edu.du.ict4315.parking.service;
 
+import com.google.inject.Inject;
 import edu.du.ict4315.parking.Car;
 import edu.du.ict4315.parking.CarType;
+import edu.du.ict4315.parking.Command;
 import edu.du.ict4315.parking.Customer;
 import edu.du.ict4315.parking.RealParkingOffice;
-import edu.du.ict4315.parking.support.ParameterCheckUtilities;
+
 import java.util.Properties;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
-/**
- *
- * @author michael
- */
 public class RegisterCarCommand implements Command {
 
     private static final Logger logger = Logger.getLogger(RegisterCarCommand.class.getName());
 
-    private final RealParkingOffice parkingOffice;
-    private final ParameterCheckUtilities check;
+    private final RealParkingOffice office;
 
-    private final String commandName = "CAR";
-    private final String displayName = "Register Car";
-
-    public RegisterCarCommand(RealParkingOffice parkingOffice) {
-        this.parkingOffice = parkingOffice;
-        check = new ParameterCheckUtilities(parkingOffice);
+    @Inject
+    public RegisterCarCommand(RealParkingOffice office) {
+        this.office = office;
     }
 
     @Override
     public String getCommandName() {
-        return commandName;
+        return "CAR";
     }
 
     @Override
     public String getDisplayName() {
-        return displayName;
+        return "Register Car";
     }
 
     @Override
-    public String execute(Properties params) {
-        // Requires a licensePlate and a customer id
-        String licensePlate = ParameterCheckUtilities.checkLicensePlate(params.getProperty("license"));
-        String customerId = params.getProperty("customer");
+    public String execute(Properties params) throws IllegalArgumentException {
+        checkParameters(params);
 
-        if (licensePlate == null) {
-            logger.info("Can't register car: missing license");
-            throw new IllegalArgumentException("Can't register car: Missing license plate");
+        String licensePlate = params.getProperty("license_plate");
+        String customerId   = params.getProperty("customer");
+        String carTypeStr   = params.getProperty("carType", "COMPACT").toUpperCase();
+
+        Customer owner = office.getCustomer(customerId);
+        if (owner == null) {
+            throw new IllegalArgumentException(
+                    "Customer with id '" + customerId + "' not found");
         }
 
-        if (customerId == null) {
-            logger.info("Can't register car: missing customer id");
-            throw new IllegalArgumentException("Can't register car: Missing customer");
+        CarType carType;
+        try {
+            carType = CarType.valueOf(carTypeStr);
+        } catch (IllegalArgumentException e) {
+            logger.log(Level.INFO, "Unknown car type ''{0}'', defaulting to COMPACT", carTypeStr);
+            carType = CarType.COMPACT;
         }
 
-        Customer customer = check.checkCustomer(customerId);
-        Car car = new Car(CarType.SUV, licensePlate, customer);
-
-        logger.info("Registering car " + car);
-
-        return parkingOffice.register(car);
+        Car car = new Car(carType, licensePlate, owner);
+        String permitId = office.register(car);
+        logger.log(Level.INFO, "Registered car, permit id: {0}", permitId);
+        return permitId;
     }
 
+    private void checkParameters(Properties params) {
+        if (params == null) {
+            throw new IllegalArgumentException("Parameters cannot be null");
+        }
+        if (isBlank(params.getProperty("license_plate"))) {
+            throw new IllegalArgumentException("license_plate is required");
+        }
+        if (isBlank(params.getProperty("customer"))) {
+            throw new IllegalArgumentException("customer is required");
+        }
+    }
+
+    private static boolean isBlank(String s) {
+        return s == null || s.isBlank();
+    }
 }

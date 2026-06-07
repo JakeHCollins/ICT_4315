@@ -5,88 +5,89 @@
 ////////////////////
 package edu.du.ict4315.parking;
 
+import edu.du.ict4315.parking.support.IdMaker;
+
 public class Customer {
+	private String id;
+	private String firstName;
+	private String lastName;
+	private String phoneNumber;
+	private Address address;
+	
+	public String getCustomerName() {
+		return firstName + " " + lastName;
+	}
 
-    private String id;
-    private String firstName;
-    private String lastName;
-    private String phoneNumber;
-    private Address address;
+	public Customer() {
+		id = IdMaker.makeId("CUST-1");
+		firstName = "";
+		lastName = "";
+		phoneNumber = "";
+		address = new Address.Builder().build();
+	}
+	
+	public Customer(String id, String firstName, String lastName,
+			String phoneNumber, Address address) {
+		this.id = id;
+		this.firstName = firstName;
+		this.lastName = lastName;
+		this.phoneNumber = phoneNumber;
+		this.address = address;
+	}
+	
+	public String getId() {
+		return id;
+	}
 
-    public String getCustomerName() {
-        return firstName + " " + lastName;
-    }
+	public void setId(String id) {
+		this.id = id;
+	}
 
-    public Customer() {
-        id = "";
-        firstName = "";
-        lastName = "";
-        phoneNumber = "";
-        address = new Address.Builder().build();
-    }
+	public String getFirstName() {
+		return firstName;
+	}
 
-    public Customer(String id, String firstName, String lastName,
-            String phoneNumber, Address address) {
-        this.id = id;
-        this.firstName = firstName;
-        this.lastName = lastName;
-        this.phoneNumber = phoneNumber;
-        this.address = address;
-    }
+	public void setFirstName(String firstName) {
+		this.firstName = firstName;
+	}
 
-    public String getId() {
-        return id;
-    }
+	public String getLastName() {
+		return lastName;
+	}
 
-    public void setId(String id) {
-        this.id = id;
-    }
+	public void setLastName(String lastName) {
+		this.lastName = lastName;
+	}
 
-    public String getFirstName() {
-        return firstName;
-    }
+	public String getPhoneNumber() {
+		return phoneNumber;
+	}
 
-    public void setFirstName(String firstName) {
-        this.firstName = firstName;
-    }
+	public void setPhoneNumber(String phoneNumber) {
+		this.phoneNumber = phoneNumber;
+	}
 
-    public String getLastName() {
-        return lastName;
-    }
+	public Address getAddress() {
+		return address;
+	}
 
-    public void setLastName(String lastName) {
-        this.lastName = lastName;
-    }
-
-    public String getPhoneNumber() {
-        return phoneNumber;
-    }
-
-    public void setPhoneNumber(String phoneNumber) {
-        this.phoneNumber = phoneNumber;
-    }
-
-    public Address getAddress() {
-        return address;
-    }
-
-    public void setAddress(Address address) {
-        this.address = address;
-    }
-
-    @Override
-    public String toString() {
-        StringBuffer sb = new StringBuffer();
-        sb.append("Customer id: ");
-        sb.append(id);
-        sb.append("\n");
-        sb.append(lastName);
-        sb.append(", ");
-        sb.append(firstName);
-        sb.append("\n");
-        sb.append(address);
-        sb.append("\n");
-        sb.append(phoneNumber);
-        return sb.toString();
-    }
+	public void setAddress(Address address) {
+		this.address = address;
+	}
+		
+	@Override
+	public String toString() {
+		StringBuilder sb = new StringBuilder();
+		sb.append("Customer id: ");
+		sb.append(id);
+		sb.append("\n");
+		sb.append(lastName);
+		sb.append(", ");
+		sb.append(firstName);
+		sb.append("\n");
+		sb.append(address);
+		sb.append("\n");
+		sb.append(phoneNumber);
+		return sb.toString();
+	}
 }
